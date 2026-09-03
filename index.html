@@ -186,7 +186,7 @@
   <aside class="sidebar">
     <div class="brand"><span class="grain"></span><div><h1 id="brand-name">RiceMore</h1><span class="sub">Gelir · Gider Yönetimi</span></div></div>
     <nav class="navlist" id="nav-desktop"></nav>
-    <div class="sidebar-foot">Tüm veriler yalnızca bu tarayıcıda, cihazınızda saklanır. Düzenli olarak Ayarlar’dan yedek indirmenizi öneririz.</div>
+    <div class="sidebar-foot">Bulut Senkronizasyonu Aktif · Aile ile ortak kullanımda.</div>
   </aside>
 
   <div class="main">
@@ -207,25 +207,25 @@
 <div id="modal-root"></div>
 <div id="toast-root"></div>
 
-<script>
-/* ============================= ICONS ============================= */
-const ICONS = {
-  dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="12" width="8" height="9" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></svg>',
-  transactions:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>',
-  contacts:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-4 4-5.5 6.5-5.5S15 16 16 20"/><circle cx="17.5" cy="8.5" r="2.4"/><path d="M15.5 14.3c2.8.3 5 1.8 5.8 5.4"/></svg>',
-  categories:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11.5 3H4v7.5L14 20.5 21 13.5 11.5 3z"/><circle cx="8" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg>',
-  recurring:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-14 5.3M4 20v-4h4"/></svg>',
-  reports:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>',
-  settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1c.6.5 1.3.9 2 1.2L10 21h4l.5-2.6c.7-.3 1.4-.7 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>',
-  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
-  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l1-4L16 5l3 3L8 19l-4 1z"/></svg>',
-  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
-  close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-  download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>',
-  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21V9m0 0l-4 4m4-4l4 4M4 4h16"/></svg>',
+<!-- Firebase SDKs and Realtime Sync -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB3gqKZAfyMDR9YS-hBlC16TwyVEpz-DhA",
+  authDomain: "ricemore-butce.firebaseapp.com",
+  projectId: "ricemore-butce",
+  storageBucket: "ricemore-butce.firebasestorage.app",
+  messagingSenderId: "995416983420",
+  appId: "1:995416983420:web:6dad1d11a614aa502d46f9",
+  measurementId: "G-VLC2CYQCX0"
 };
 
-/* ============================= STATE ============================= */
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const docRef = doc(db, "ricemore", "shared_state");
+
 const STORAGE_KEY = 'ricemore_finance_v1';
 
 function uid(p){ return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
@@ -262,108 +262,140 @@ function defaultData(){
   };
 }
 
-let state = loadState();
-function loadState(){
+window.state = loadLocalState();
+function loadLocalState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){ const parsed = JSON.parse(raw); if(parsed && parsed.accounts) return parsed; }
   }catch(e){}
-  const d = defaultData();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
-  return d;
+  return defaultData();
 }
-function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-/* ============================= HELPERS ============================= */
-function fmtMoney(n){
+window.saveState = function(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(window.state));
+  setDoc(docRef, window.state).catch(err => console.error("Bulut kayıt hatası:", err));
+};
+
+// Realtime cloud sync listener
+onSnapshot(docRef, (docSnap) => {
+  if (docSnap.exists()) {
+    window.state = docSnap.data();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(window.state));
+  } else {
+    setDoc(docRef, window.state);
+  }
+  if(typeof applyBrand === 'function') applyBrand();
+  if(typeof render === 'function') render();
+}, (error) => {
+  console.error("Bulut bağlantı hatası:", error);
+});
+
+// Expose helpers globally for the app UI
+window.ICONS = {
+  dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="12" width="8" height="9" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></svg>',
+  transactions:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>',
+  contacts:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-4 4-5.5 6.5-5.5S15 16 16 20"/><circle cx="17.5" cy="8.5" r="2.4"/><path d="M15.5 14.3c2.8.3 5 1.8 5.8 5.4"/></svg>',
+  categories:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11.5 3H4v7.5L14 20.5 21 13.5 11.5 3z"/><circle cx="8" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg>',
+  recurring:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-14 5.3M4 20v-4h4"/></svg>',
+  reports:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>',
+  settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1c.6.5 1.3.9 2 1.2L10 21h4l.5-2.6c.7-.3 1.4-.7 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l1-4L16 5l3 3L8 19l-4 1z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>',
+  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21V9m0 0l-4 4m4-4l4 4M4 4h16"/></svg>',
+};
+
+window.fmtMoney = function(n){
   const v = Number(n)||0;
   return v.toLocaleString('tr-TR',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' ₺';
-}
-function fmtDate(iso){
+};
+window.fmtDate = function(iso){
   const d = new Date(iso+'T00:00:00');
   return d.toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'numeric'});
-}
-function todayISO(){ return new Date().toISOString().slice(0,10); }
-function monthKey(iso){ return iso.slice(0,7); }
-function monthLabel(key){
+};
+window.todayISO = function(){ return new Date().toISOString().slice(0,10); };
+window.monthKey = function(iso){ return iso.slice(0,7); };
+window.monthLabel = function(key){
   const [y,m] = key.split('-');
   const names=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
   return names[parseInt(m,10)-1]+' '+y;
-}
-function catById(id, type){
-  const list = state.categories[type]||[];
+};
+window.catById = function(id, type){
+  const list = window.state.categories[type]||[];
   return list.find(c=>c.id===id);
-}
-function accById(id){ return state.accounts.find(a=>a.id===id); }
-function contactById(id){ return state.contacts.find(c=>c.id===id); }
-function escapeHtml(s){
+};
+window.accById = function(id){ return window.state.accounts.find(a=>a.id===id); };
+window.contactById = function(id){ return window.state.contacts.find(c=>c.id===id); };
+window.escapeHtml = function(s){
   return String(s==null?'':s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
+};
 
-function accountBalance(accId){
-  const acc = accById(accId); if(!acc) return 0;
+window.accountBalance = function(accId){
+  const acc = window.accById(accId); if(!acc) return 0;
   let bal = Number(acc.opening)||0;
-  state.transactions.forEach(t=>{
+  window.state.transactions.forEach(t=>{
     if(t.accountId!==accId) return;
     bal += (t.type==='gelir' ? Number(t.amount) : -Number(t.amount));
   });
   return bal;
-}
-function totalBalance(){ return state.accounts.reduce((s,a)=>s+accountBalance(a.id),0); }
+};
+window.totalBalance = function(){ return window.state.accounts.reduce((s,a)=>s+window.accountBalance(a.id),0); };
 
-function sumInRange(type, startISO, endISO){
-  return state.transactions
+window.sumInRange = function(type, startISO, endISO){
+  return window.state.transactions
     .filter(t=>t.type===type && t.date>=startISO && t.date<=endISO)
     .reduce((s,t)=>s+Number(t.amount),0);
-}
-function txInRange(startISO,endISO){
-  return state.transactions.filter(t=>t.date>=startISO && t.date<=endISO);
-}
-function monthRange(year,monthIdx0){
+};
+window.txInRange = function(startISO,endISO){
+  return window.state.transactions.filter(t=>t.date>=startISO && t.date<=endISO);
+};
+window.monthRange = function(year,monthIdx0){
   const start = new Date(year,monthIdx0,1);
   const end = new Date(year,monthIdx0+1,0);
   return [start.toISOString().slice(0,10), end.toISOString().slice(0,10)];
-}
+};
 
-function showToast(msg){
+window.showToast = function(msg){
   const root = document.getElementById('toast-root');
   const el = document.createElement('div');
   el.className='toast'; el.textContent=msg;
   root.appendChild(el);
   setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .25s'; setTimeout(()=>el.remove(),250); }, 2400);
-}
+};
 
-function download(filename, content, mime){
+window.download = function(filename, content, mime){
   const blob = new Blob([content], {type:mime});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href=url; a.download=filename; document.body.appendChild(a); a.click();
   a.remove(); URL.revokeObjectURL(url);
-}
+};
 
 /* ============================= MODAL ============================= */
-function openModal(title, bodyHtml, footHtml){
+window.openModal = function(title, bodyHtml, footHtml){
   const root = document.getElementById('modal-root');
   root.innerHTML = `
     <div class="overlay" id="modal-overlay">
       <div class="dialog" role="dialog" aria-modal="true">
         <div class="dialog-head"><h3>${title}</h3>
-          <button class="icon-btn" id="modal-close" aria-label="Kapat">${ICONS.close}</button>
+          <button class="icon-btn" id="modal-close" aria-label="Kapat">${window.ICONS.close}</button>
         </div>
         <div class="dialog-body">${bodyHtml}</div>
         ${footHtml?`<div class="dialog-foot">${footHtml}</div>`:''}
       </div>
     </div>`;
   const overlay = document.getElementById('modal-overlay');
-  overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
-  document.getElementById('modal-close').addEventListener('click', closeModal);
-  document.addEventListener('keydown', escCloseHandler);
-}
-function escCloseHandler(e){ if(e.key==='Escape') closeModal(); }
-function closeModal(){
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) window.closeModal(); });
+  document.getElementById('modal-close').addEventListener('click', window.closeModal);
+  document.addEventListener('keydown', window.escCloseHandler);
+};
+window.escCloseHandler = function(e){ if(e.key==='Escape') window.closeModal(); };
+window.closeModal = function(){
   document.getElementById('modal-root').innerHTML='';
-  document.removeEventListener('keydown', escCloseHandler);
-}
+  document.removeEventListener('keydown', window.escCloseHandler);
+};
 
 /* ============================= NAV ============================= */
 const NAV_ITEMS = [
@@ -377,22 +409,22 @@ const NAV_ITEMS = [
 ];
 let currentView = 'dashboard';
 
-function renderNav(){
+window.renderNav = function(){
   const desktop = document.getElementById('nav-desktop');
   desktop.innerHTML = NAV_ITEMS.map(item=>`
     <button class="navlink ${currentView===item.key?'active':''}" data-nav="${item.key}">
-      ${ICONS[item.icon]}<span>${item.label}</span>
+      ${window.ICONS[item.icon]}<span>${item.label}</span>
     </button>`).join('');
-  desktop.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.nav)));
+  desktop.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>window.navigate(b.dataset.nav)));
 
   const mobileSet = ['dashboard','transactions','contacts','reports','settings'];
   const mobile = document.getElementById('nav-mobile');
   mobile.innerHTML = NAV_ITEMS.filter(i=>mobileSet.includes(i.key)).map(item=>`
     <button class="${currentView===item.key?'active':''}" data-nav="${item.key}">
-      ${ICONS[item.icon]}<span>${item.label.split(' ')[0]}</span>
+      ${window.ICONS[item.icon]}<span>${item.label.split(' ')[0]}</span>
     </button>`).join('');
-  mobile.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.nav)));
-}
+  mobile.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>window.navigate(b.dataset.nav)));
+};
 
 const PAGE_META = {
   dashboard:'İşletmenizin genel finansal durumu',
@@ -404,15 +436,15 @@ const PAGE_META = {
   settings:'İşletme, hesap ve veri ayarları'
 };
 
-function navigate(view){
+window.navigate = function(view){
   currentView = view;
   document.getElementById('page-title').textContent = NAV_ITEMS.find(i=>i.key===view).label;
   document.getElementById('page-meta').textContent = PAGE_META[view];
-  renderNav();
-  render();
-}
+  window.renderNav();
+  window.render();
+};
 
-function render(){
+window.render = function(){
   const root = document.getElementById('view-root');
   root.innerHTML='';
   const renderers = {
@@ -420,7 +452,7 @@ function render(){
     categories: renderCategories, recurring: renderRecurring, reports: renderReports, settings: renderSettings
   };
   renderers[currentView](root);
-}
+};
 
 /* ============================= CHARTS (canvas) ============================= */
 function setupHiDPI(canvas, cssW, cssH){
@@ -503,7 +535,6 @@ function renderDashboard(root){
   const net = incomeMonth - expenseMonth;
   const bal = totalBalance();
 
-  // last 6 months data
   const labels=[], incSeries=[], expSeries=[];
   for(let i=5;i>=0;i--){
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
@@ -513,7 +544,6 @@ function renderDashboard(root){
     expSeries.push(sumInRange('gider',s,e));
   }
 
-  // category breakdown this month (expense)
   const expThisMonth = txInRange(mStart,mEnd).filter(t=>t.type==='gider');
   const byCat = {};
   expThisMonth.forEach(t=>{ byCat[t.categoryId]=(byCat[t.categoryId]||0)+Number(t.amount); });
@@ -526,15 +556,14 @@ function renderDashboard(root){
     catData = catData.slice(0,6).concat([{label:'Diğer',value:rest,color:'#9AA0A6'}]);
   }
 
-  const recent = [...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,6);
+  const recent = [...window.state.transactions].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,6);
 
-  // due recurring for current month
   const curMonthKey = monthKey(todayISO());
-  const dueRecurring = state.recurring.filter(r=>r.active!==false && !state.transactions.some(t=>t.recurringId===r.id && monthKey(t.date)===curMonthKey));
+  const dueRecurring = window.state.recurring.filter(r=>r.active!==false && !window.state.transactions.some(t=>t.recurringId===r.id && monthKey(t.date)===curMonthKey));
 
   root.innerHTML = `
     <div class="grid grid-4" style="margin-bottom:16px;">
-      <div class="card stat-card"><div class="label">TOPLAM BAKİYE</div><div class="value num">${fmtMoney(bal)}</div><div class="sub">${state.accounts.length} hesap toplamı</div></div>
+      <div class="card stat-card"><div class="label">TOPLAM BAKİYE</div><div class="value num">${fmtMoney(bal)}</div><div class="sub">${window.state.accounts.length} hesap toplamı</div></div>
       <div class="card stat-card income"><div class="label">BU AY GELİR</div><div class="value num">${fmtMoney(incomeMonth)}</div><div class="sub">${monthLabel(curMonthKey)}</div></div>
       <div class="card stat-card expense"><div class="label">BU AY GİDER</div><div class="value num">${fmtMoney(expenseMonth)}</div><div class="sub">${monthLabel(curMonthKey)}</div></div>
       <div class="card stat-card"><div class="label">BU AY NET</div><div class="value num" style="color:${net>=0?'var(--income)':'var(--expense)'}">${net>=0?'+':''}${fmtMoney(net)}</div><div class="sub">Gelir − Gider</div></div>
@@ -583,7 +612,7 @@ function renderDashboard(root){
           <td>${escapeHtml(t.description)||'<span class="hint">—</span>'}</td>
           <td>${c?`<span class="dot" style="background:${c.color}"></span> ${escapeHtml(c.name)}`:'—'}</td>
           <td>${contact?escapeHtml(contact.name):'—'}</td>
-          <td style="text-align:right;" class="num ${t.type==='gelir'?'':'style'}"><span class="pill ${t.type==='gelir'?'income':'expense'}">${t.type==='gelir'?'+':'−'}${fmtMoney(t.amount)}</span></td>
+          <td style="text-align:right;" class="num"><span class="pill ${t.type==='gelir'?'income':'expense'}">${t.type==='gelir'?'+':'−'}${fmtMoney(t.amount)}</span></td>
         </tr>`;
       }).join('')}</tbody></table>` : `<div class="empty"><div class="big">Henüz işlem yok</div>İlk gelir veya gider kaydınızı eklemek için “Yeni İşlem” butonunu kullanın.</div>`}
     </div>
@@ -605,7 +634,7 @@ let txFilters = { type:'', categoryId:'', accountId:'', contactId:'', start:'', 
 let txVisibleCount = 50;
 
 function filteredTx(){
-  return state.transactions.filter(t=>{
+  return window.state.transactions.filter(t=>{
     if(txFilters.type && t.type!==txFilters.type) return false;
     if(txFilters.categoryId && t.categoryId!==txFilters.categoryId) return false;
     if(txFilters.accountId && t.accountId!==txFilters.accountId) return false;
@@ -620,7 +649,7 @@ function filteredTx(){
 function renderTransactions(root){
   const all = filteredTx();
   const shown = all.slice(0, txVisibleCount);
-  const allCats = [...state.categories.gelir, ...state.categories.gider];
+  const allCats = [...window.state.categories.gelir, ...window.state.categories.gider];
   const sumIncome = all.filter(t=>t.type==='gelir').reduce((s,t)=>s+Number(t.amount),0);
   const sumExpense = all.filter(t=>t.type==='gider').reduce((s,t)=>s+Number(t.amount),0);
 
@@ -629,13 +658,13 @@ function renderTransactions(root){
       <div class="filters">
         <select id="f-type"><option value="">Tür: Tümü</option><option value="gelir">Gelir</option><option value="gider">Gider</option></select>
         <select id="f-cat"><option value="">Kategori: Tümü</option>${allCats.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
-        <select id="f-acc"><option value="">Hesap: Tümü</option>${state.accounts.map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('')}</select>
-        <select id="f-contact"><option value="">Cari: Tümü</option>${state.contacts.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
+        <select id="f-acc"><option value="">Hesap: Tümü</option>${window.state.accounts.map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('')}</select>
+        <select id="f-contact"><option value="">Cari: Tümü</option>${window.state.contacts.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
         <input type="date" id="f-start" title="Başlangıç">
         <input type="date" id="f-end" title="Bitiş">
         <input type="search" id="f-q" placeholder="Açıklamada ara...">
         <button class="btn btn-ghost btn-sm" id="f-clear">Filtreleri Temizle</button>
-        <button class="btn btn-sm" id="btn-export-csv">${ICONS.download} CSV Aktar</button>
+        <button class="btn btn-sm" id="btn-export-csv">${window.ICONS.download} CSV Aktar</button>
       </div>
       <div class="hint">${all.length} işlem bulundu · Gelir: <span style="color:var(--income)">${fmtMoney(sumIncome)}</span> · Gider: <span style="color:var(--expense)">${fmtMoney(sumExpense)}</span> · Net: ${fmtMoney(sumIncome-sumExpense)}</div>
     </div>
@@ -667,10 +696,10 @@ function renderTransactions(root){
   const loadMore = root.querySelector('#btn-load-more');
   if(loadMore) loadMore.addEventListener('click',()=>{ txVisibleCount+=50; render(); });
 
-  root.querySelectorAll('[data-edit-tx]').forEach(b=>b.addEventListener('click',()=>openTransactionModal(state.transactions.find(t=>t.id===b.dataset.editTx))));
+  root.querySelectorAll('[data-edit-tx]').forEach(b=>b.addEventListener('click',()=>openTransactionModal(window.state.transactions.find(t=>t.id===b.dataset.editTx))));
   root.querySelectorAll('[data-del-tx]').forEach(b=>b.addEventListener('click',()=>{
     if(confirm('Bu işlemi silmek istediğinize emin misiniz?')){
-      state.transactions = state.transactions.filter(t=>t.id!==b.dataset.delTx);
+      window.state.transactions = window.state.transactions.filter(t=>t.id!==b.dataset.delTx);
       saveState(); showToast('İşlem silindi'); render();
     }
   }));
@@ -686,8 +715,8 @@ function renderTxRow(t){
     <td>${acc?escapeHtml(acc.name):'—'}${contact?' · '+escapeHtml(contact.name):''}</td>
     <td style="text-align:right;"><span class="pill ${t.type==='gelir'?'income':'expense'}">${t.type==='gelir'?'+':'−'}${fmtMoney(t.amount)}</span></td>
     <td><div class="row-actions">
-      <button class="icon-btn" data-edit-tx="${t.id}" title="Düzenle">${ICONS.edit}</button>
-      <button class="icon-btn" data-del-tx="${t.id}" title="Sil">${ICONS.trash}</button>
+      <button class="icon-btn" data-edit-tx="${t.id}" title="Düzenle">${window.ICONS.edit}</button>
+      <button class="icon-btn" data-del-tx="${t.id}" title="Sil">${window.ICONS.trash}</button>
     </div></td>
   </tr>`;
 }
@@ -704,7 +733,7 @@ function exportTxCSV(list){
 
 function openTransactionModal(existing){
   const type0 = existing?existing.type:'gider';
-  const catsFor = (type)=> state.categories[type];
+  const catsFor = (type)=> window.state.categories[type];
   const body = `
     <div class="field"><label>İşlem Türü</label>
       <div class="toggle-group">
@@ -718,10 +747,10 @@ function openTransactionModal(existing){
     </div>
     <div class="field"><label>Kategori</label><select id="tx-cat">${catsFor(type0).map(c=>`<option value="${c.id}" ${existing&&existing.categoryId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}</select></div>
     <div class="field-row">
-      <div class="field"><label>Hesap</label><select id="tx-acc">${state.accounts.map(a=>`<option value="${a.id}" ${existing&&existing.accountId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}</select></div>
-      <div class="field"><label>Cari (opsiyonel)</label><select id="tx-contact"><option value="">Yok</option>${state.contacts.map(c=>`<option value="${c.id}" ${existing&&existing.contactId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Hesap</label><select id="tx-acc">${window.state.accounts.map(a=>`<option value="${a.id}" ${existing&&existing.accountId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Cari (opsiyonel)</label><select id="tx-contact"><option value="">Yok</option>${window.state.contacts.map(c=>`<option value="${c.id}" ${existing&&existing.contactId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}</select></div>
     </div>
-    <div class="field"><label>Açıklama</label><input type="text" id="tx-desc" maxlength="120" value="${existing?escapeHtml(existing.description||''):''}" placeholder="Örn. Nisan ayı market siparişi"></div>
+    <div class="field"><label>Açıklama</label><input type="text" id="tx-desc" maxlength="120" value="${existing?escapeHtml(existing.description||''):''}" placeholder="Örn. Market alışverişi"></div>
   `;
   const foot = `<button class="btn btn-ghost" id="tx-cancel">Vazgeç</button><button class="btn btn-primary" id="tx-save">${existing?'Güncelle':'Kaydet'}</button>`;
   openModal(existing?'İşlemi Düzenle':'Yeni İşlem', body, foot);
@@ -747,7 +776,7 @@ function openTransactionModal(existing){
     if(existing){
       Object.assign(existing, {type:curType, date, amount, categoryId, accountId, contactId, description});
     } else {
-      state.transactions.push({ id:uid('tx'), type:curType, date, amount, categoryId, accountId, contactId, description, recurringId:null });
+      window.state.transactions.push({ id:uid('tx'), type:curType, date, amount, categoryId, accountId, contactId, description, recurringId:null });
     }
     saveState(); closeModal(); showToast('İşlem kaydedildi'); render();
   });
@@ -756,21 +785,21 @@ function openTransactionModal(existing){
 /* ============================= CONTACTS ============================= */
 let contactTypeFilter = '';
 function renderContacts(root){
-  const list = state.contacts.filter(c=> !contactTypeFilter || c.type===contactTypeFilter);
+  const list = window.state.contacts.filter(c=> !contactTypeFilter || c.type===contactTypeFilter);
   root.innerHTML = `
     <div class="filters">
       <select id="c-type-filter">
         <option value="">Tür: Tümü</option><option value="musteri">Müşteri</option><option value="tedarikci">Tedarikçi</option><option value="diger">Diğer</option>
       </select>
       <div style="flex:1;"></div>
-      <button class="btn btn-primary" id="btn-add-contact">${ICONS.plus} Yeni Cari</button>
+      <button class="btn btn-primary" id="btn-add-contact">${window.ICONS.plus} Yeni Cari</button>
     </div>
     <div class="card">
       ${list.length? `
       <table><thead><tr><th>Ad</th><th>Tür</th><th>Toplam Gelir</th><th>Toplam Gider</th><th></th></tr></thead>
       <tbody>${list.map(c=>{
-        const inc = state.transactions.filter(t=>t.contactId===c.id && t.type==='gelir').reduce((s,t)=>s+Number(t.amount),0);
-        const exp = state.transactions.filter(t=>t.contactId===c.id && t.type==='gider').reduce((s,t)=>s+Number(t.amount),0);
+        const inc = window.state.transactions.filter(t=>t.contactId===c.id && t.type==='gelir').reduce((s,t)=>s+Number(t.amount),0);
+        const exp = window.state.transactions.filter(t=>t.contactId===c.id && t.type==='gider').reduce((s,t)=>s+Number(t.amount),0);
         const typeLabel = c.type==='musteri'?'Müşteri':c.type==='tedarikci'?'Tedarikçi':'Diğer';
         return `<tr>
           <td><strong>${escapeHtml(c.name)}</strong>${c.phone?`<div class="hint">${escapeHtml(c.phone)}</div>`:''}</td>
@@ -778,9 +807,9 @@ function renderContacts(root){
           <td class="num" style="color:var(--income)">${fmtMoney(inc)}</td>
           <td class="num" style="color:var(--expense)">${fmtMoney(exp)}</td>
           <td><div class="row-actions">
-            <button class="icon-btn" data-view-contact="${c.id}" title="İşlemleri Gör">${ICONS.transactions}</button>
-            <button class="icon-btn" data-edit-contact="${c.id}" title="Düzenle">${ICONS.edit}</button>
-            <button class="icon-btn" data-del-contact="${c.id}" title="Sil">${ICONS.trash}</button>
+            <button class="icon-btn" data-view-contact="${c.id}" title="İşlemleri Gör">${window.ICONS.transactions}</button>
+            <button class="icon-btn" data-edit-contact="${c.id}" title="Düzenle">${window.ICONS.edit}</button>
+            <button class="icon-btn" data-del-contact="${c.id}" title="Sil">${window.ICONS.trash}</button>
           </div></td>
         </tr>`;
       }).join('')}</tbody></table>` : `<div class="empty"><div class="big">Henüz cari kaydı yok</div>Müşteri veya tedarikçilerinizi ekleyerek işlemleri onlarla ilişkilendirebilirsiniz.</div>`}
@@ -793,8 +822,8 @@ function renderContacts(root){
   root.querySelectorAll('[data-del-contact]').forEach(b=>b.addEventListener('click',()=>{
     const id = b.dataset.delContact;
     if(confirm('Bu cariyi silmek istiyor musunuz? Bu cariye bağlı işlemler silinmez, sadece bağlantısı kaldırılır.')){
-      state.transactions.forEach(t=>{ if(t.contactId===id) t.contactId=null; });
-      state.contacts = state.contacts.filter(c=>c.id!==id);
+      window.state.transactions.forEach(t=>{ if(t.contactId===id) t.contactId=null; });
+      window.state.contacts = window.state.contacts.filter(c=>c.id!==id);
       saveState(); showToast('Cari silindi'); render();
     }
   }));
@@ -822,25 +851,25 @@ function openContactModal(existing){
     if(!name){ showToast('Lütfen bir isim girin'); return; }
     const data = { name, type: document.getElementById('ct-type').value, phone: document.getElementById('ct-phone').value.trim(), note: document.getElementById('ct-note').value.trim() };
     if(existing) Object.assign(existing, data);
-    else state.contacts.push({ id:uid('ct'), ...data });
+    else window.state.contacts.push({ id:uid('ct'), ...data });
     saveState(); closeModal(); showToast('Cari kaydedildi'); render();
   });
 }
 
 /* ============================= CATEGORIES ============================= */
 function renderCategories(root){
-  function colBlock(type,title,colorHint){
-    const list = state.categories[type];
+  function colBlock(type,title){
+    const list = window.state.categories[type];
     return `
     <div class="card">
-      <div class="card-head"><h3>${title}</h3><button class="btn btn-sm" data-add-cat="${type}">${ICONS.plus} Ekle</button></div>
+      <div class="card-head"><h3>${title}</h3><button class="btn btn-sm" data-add-cat="${type}">${window.ICONS.plus} Ekle</button></div>
       ${list.length? `<div class="kv-list">${list.map(c=>{
-        const used = state.transactions.filter(t=>t.categoryId===c.id).length;
+        const used = window.state.transactions.filter(t=>t.categoryId===c.id).length;
         return `<div class="kv-row">
           <div style="display:flex;align-items:center;gap:9px;"><span class="dot" style="background:${c.color}"></span>${escapeHtml(c.name)} <span class="hint">(${used} işlem)</span></div>
           <div class="row-actions">
-            <button class="icon-btn" data-edit-cat="${type}:${c.id}" title="Düzenle">${ICONS.edit}</button>
-            <button class="icon-btn" data-del-cat="${type}:${c.id}" title="Sil">${ICONS.trash}</button>
+            <button class="icon-btn" data-edit-cat="${type}:${c.id}" title="Düzenle">${window.ICONS.edit}</button>
+            <button class="icon-btn" data-del-cat="${type}:${c.id}" title="Sil">${window.ICONS.trash}</button>
           </div>
         </div>`;
       }).join('')}</div>` : `<div class="empty">Henüz kategori yok.</div>`}
@@ -856,10 +885,10 @@ function renderCategories(root){
   root.querySelectorAll('[data-del-cat]').forEach(b=>{
     const [type,id] = b.dataset.delCat.split(':');
     b.addEventListener('click',()=>{
-      const used = state.transactions.filter(t=>t.categoryId===id).length;
+      const used = window.state.transactions.filter(t=>t.categoryId===id).length;
       if(used>0){ showToast('Bu kategori '+used+' işlemde kullanılıyor, silinemez.'); return; }
       if(confirm('Bu kategoriyi silmek istiyor musunuz?')){
-        state.categories[type] = state.categories[type].filter(c=>c.id!==id);
+        window.state.categories[type] = window.state.categories[type].filter(c=>c.id!==id);
         saveState(); showToast('Kategori silindi'); render();
       }
     });
@@ -867,7 +896,7 @@ function renderCategories(root){
 }
 function openCategoryModal(type, existing){
   const palette = ['#8FB996','#6FA8DC','#D9A441','#B9A0D4','#E2725B','#E29A3A','#C0645A','#7C9C8E','#9AA0A6'];
-  const initColor = existing?existing.color:palette[state.categories[type].length % palette.length];
+  const initColor = existing?existing.color:palette[window.state.categories[type].length % palette.length];
   const body = `
     <div class="field"><label>Kategori Adı</label><input type="text" id="cat-name" value="${existing?escapeHtml(existing.name):''}" placeholder="Örn. Depo Kirası"></div>
     <div class="field"><label>Renk</label><div class="colorline"><input type="color" id="cat-color" value="${initColor}"><span class="hint">Raporlarda ve listelerde bu renkle gösterilecek</span></div></div>
@@ -880,28 +909,28 @@ function openCategoryModal(type, existing){
     if(!name){ showToast('Lütfen kategori adı girin'); return; }
     const color = document.getElementById('cat-color').value;
     if(existing){ existing.name=name; existing.color=color; }
-    else state.categories[type].push({ id:uid('cat'), name, color });
+    else window.state.categories[type].push({ id:uid('cat'), name, color });
     saveState(); closeModal(); showToast('Kategori kaydedildi'); render();
   });
 }
 
 /* ============================= RECURRING ============================= */
-function generateRecurring(id){
-  const r = state.recurring.find(x=>x.id===id); if(!r) return;
+window.generateRecurring = function(id){
+  const r = window.state.recurring.find(x=>x.id===id); if(!r) return;
   const mk = monthKey(todayISO());
-  if(state.transactions.some(t=>t.recurringId===id && monthKey(t.date)===mk)){ showToast('Bu ay için zaten oluşturulmuş'); return; }
-  state.transactions.push({ id:uid('tx'), type:r.type, date:todayISO(), amount:r.amount, categoryId:r.categoryId, accountId:r.accountId, contactId:r.contactId||null, description:r.description, recurringId:r.id });
+  if(window.state.transactions.some(t=>t.recurringId===id && monthKey(t.date)===mk)){ showToast('Bu ay için zaten oluşturulmuş'); return; }
+  window.state.transactions.push({ id:uid('tx'), type:r.type, date:todayISO(), amount:r.amount, categoryId:r.categoryId, accountId:r.accountId, contactId:r.contactId||null, description:r.description, recurringId:r.id });
   saveState(); showToast('İşlem oluşturuldu: '+r.description);
-}
+};
 function renderRecurring(root){
   const curMonthKey = monthKey(todayISO());
   root.innerHTML = `
-    <div class="filters"><div style="flex:1;"></div><button class="btn btn-primary" id="btn-add-recurring">${ICONS.plus} Yeni Düzenli İşlem</button></div>
+    <div class="filters"><div style="flex:1;"></div><button class="btn btn-primary" id="btn-add-recurring">${window.ICONS.plus} Yeni Düzenli İşlem</button></div>
     <div class="card">
-      ${state.recurring.length? `
+      ${window.state.recurring.length? `
       <table><thead><tr><th>Açıklama</th><th>Tür</th><th>Tutar</th><th>Sıklık</th><th>Bu Ay</th><th></th></tr></thead>
-      <tbody>${state.recurring.map(r=>{
-        const done = state.transactions.some(t=>t.recurringId===r.id && monthKey(t.date)===curMonthKey);
+      <tbody>${window.state.recurring.map(r=>{
+        const done = window.state.transactions.some(t=>t.recurringId===r.id && monthKey(t.date)===curMonthKey);
         return `<tr>
           <td>${escapeHtml(r.description)}</td>
           <td><span class="pill ${r.type==='gelir'?'income':'expense'}">${r.type==='gelir'?'Gelir':'Gider'}</span></td>
@@ -909,19 +938,19 @@ function renderRecurring(root){
           <td>${r.frequency==='monthly'?'Aylık':'Haftalık'}</td>
           <td>${done? '<span class="hint">✓ Oluşturuldu</span>' : `<button class="btn btn-sm btn-primary" data-gen="${r.id}">Oluştur</button>`}</td>
           <td><div class="row-actions">
-            <button class="icon-btn" data-edit-rec="${r.id}" title="Düzenle">${ICONS.edit}</button>
-            <button class="icon-btn" data-del-rec="${r.id}" title="Sil">${ICONS.trash}</button>
+            <button class="icon-btn" data-edit-rec="${r.id}" title="Düzenle">${window.ICONS.edit}</button>
+            <button class="icon-btn" data-del-rec="${r.id}" title="Sil">${window.ICONS.trash}</button>
           </div></td>
         </tr>`;
       }).join('')}</tbody></table>` : `<div class="empty"><div class="big">Düzenli işlem tanımlı değil</div>Kira, personel maaşı veya abonelik gibi her ay tekrar eden gelir/giderleri burada tanımlayıp tek tıkla oluşturabilirsiniz.</div>`}
     </div>
   `;
   root.querySelector('#btn-add-recurring').addEventListener('click',()=>openRecurringModal(null));
-  root.querySelectorAll('[data-gen]').forEach(b=>b.addEventListener('click',()=>{ generateRecurring(b.dataset.gen); render(); }));
-  root.querySelectorAll('[data-edit-rec]').forEach(b=>b.addEventListener('click',()=>openRecurringModal(state.recurring.find(r=>r.id===b.dataset.editRec))));
+  root.querySelectorAll('[data-gen]').forEach(b=>b.addEventListener('click',()=>{ window.generateRecurring(b.dataset.gen); render(); }));
+  root.querySelectorAll('[data-edit-rec]').forEach(b=>b.addEventListener('click',()=>openRecurringModal(window.state.recurring.find(r=>r.id===b.dataset.editRec))));
   root.querySelectorAll('[data-del-rec]').forEach(b=>b.addEventListener('click',()=>{
-    if(confirm('Bu düzenli işlem tanımını silmek istiyor musunuz? (Geçmişte oluşturulan işlemler silinmez)')){
-      state.recurring = state.recurring.filter(r=>r.id!==b.dataset.delRec);
+    if(confirm('Bu düzenli işlem tanımını silmek istiyor musunuz?')){
+      window.state.recurring = window.state.recurring.filter(r=>r.id!==b.dataset.delRec);
       saveState(); showToast('Düzenli işlem silindi'); render();
     }
   }));
@@ -943,14 +972,14 @@ function openRecurringModal(existing){
         <option value="weekly" ${existing&&existing.frequency==='weekly'?'selected':''}>Haftalık</option>
       </select></div>
     </div>
-    <div class="field"><label>Kategori</label><select id="rec-cat">${state.categories[type0].map(c=>`<option value="${c.id}" ${existing&&existing.categoryId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}</select></div>
-    <div class="field"><label>Hesap</label><select id="rec-acc">${state.accounts.map(a=>`<option value="${a.id}" ${existing&&existing.accountId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>Kategori</label><select id="rec-cat">${window.state.categories[type0].map(c=>`<option value="${c.id}" ${existing&&existing.categoryId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>Hesap</label><select id="rec-acc">${window.state.accounts.map(a=>`<option value="${a.id}" ${existing&&existing.accountId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}</select></div>
   `;
   const foot = `<button class="btn btn-ghost" id="rec-cancel">Vazgeç</button><button class="btn btn-primary" id="rec-save">${existing?'Güncelle':'Kaydet'}</button>`;
   openModal(existing?'Düzenli İşlemi Düzenle':'Yeni Düzenli İşlem', body, foot);
   let curType = type0;
   const og = document.getElementById('ropt-gelir'), ogi = document.getElementById('ropt-gider');
-  function refresh(){ document.getElementById('rec-cat').innerHTML = state.categories[curType].map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join(''); }
+  function refresh(){ document.getElementById('rec-cat').innerHTML = window.state.categories[curType].map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join(''); }
   og.addEventListener('click',()=>{ curType='gelir'; og.className='toggle-opt sel-income'; ogi.className='toggle-opt'; refresh(); });
   ogi.addEventListener('click',()=>{ curType='gider'; ogi.className='toggle-opt sel-expense'; og.className='toggle-opt'; refresh(); });
   document.getElementById('rec-cancel').addEventListener('click', closeModal);
@@ -961,7 +990,7 @@ function openRecurringModal(existing){
     const data = { type:curType, description, amount, frequency:document.getElementById('rec-freq').value,
       categoryId:document.getElementById('rec-cat').value, accountId:document.getElementById('rec-acc').value, active:true };
     if(existing) Object.assign(existing, data);
-    else state.recurring.push({ id:uid('rec'), ...data });
+    else window.state.recurring.push({ id:uid('rec'), ...data });
     saveState(); closeModal(); showToast('Düzenli işlem kaydedildi'); render();
   });
 }
@@ -970,7 +999,7 @@ function openRecurringModal(existing){
 let reportYear = new Date().getFullYear();
 function renderReports(root){
   const years = new Set([reportYear]);
-  state.transactions.forEach(t=>years.add(parseInt(t.date.slice(0,4),10)));
+  window.state.transactions.forEach(t=>years.add(parseInt(t.date.slice(0,4),10)));
   const yearList = [...years].sort((a,b)=>b-a);
 
   const monthsInc=[], monthsExp=[], monthLabels=[];
@@ -994,7 +1023,7 @@ function renderReports(root){
     <div class="filters">
       <select id="rep-year">${yearList.map(y=>`<option value="${y}" ${y===reportYear?'selected':''}>${y}</option>`).join('')}</select>
       <div style="flex:1;"></div>
-      <button class="btn btn-sm" id="rep-export">${ICONS.download} Yıllık CSV</button>
+      <button class="btn btn-sm" id="rep-export">${window.ICONS.download} Yıllık CSV</button>
       <button class="btn btn-sm" id="rep-print">Yazdır</button>
     </div>
     <div class="grid grid-4" style="margin-bottom:16px;">
@@ -1026,7 +1055,7 @@ function renderSettings(root){
       <div>
         <div class="card" style="margin-bottom:16px;">
           <h3>İşletme Bilgisi</h3>
-          <div class="field"><label>İşletme Adı</label><input type="text" id="set-bizname" value="${escapeHtml(state.settings.businessName)}"></div>
+          <div class="field"><label>İşletme Adı</label><input type="text" id="set-bizname" value="${escapeHtml(window.state.settings.businessName)}"></div>
           <button class="btn btn-primary btn-sm" id="save-bizname">Kaydet</button>
         </div>
 
@@ -1034,22 +1063,22 @@ function renderSettings(root){
           <h3>Görünüm</h3>
           <div class="field"><label>Tema</label>
             <div class="toggle-group">
-              <div class="toggle-opt ${state.settings.theme==='dark'?'sel-income':''}" id="theme-dark">Koyu</div>
-              <div class="toggle-opt ${state.settings.theme==='light'?'sel-income':''}" id="theme-light">Açık</div>
+              <div class="toggle-opt ${window.state.settings.theme==='dark'?'sel-income':''}" id="theme-dark">Koyu</div>
+              <div class="toggle-opt ${window.state.settings.theme==='light'?'sel-income':''}" id="theme-light">Açık</div>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-head"><h3>Hesaplar</h3><button class="btn btn-sm" id="btn-add-acc">${ICONS.plus} Ekle</button></div>
+          <div class="card-head"><h3>Hesaplar</h3><button class="btn btn-sm" id="btn-add-acc">${window.ICONS.plus} Ekle</button></div>
           <div class="kv-list">
-            ${state.accounts.map(a=>`
+            ${window.state.accounts.map(a=>`
             <div class="kv-row">
               <div>${escapeHtml(a.name)} <span class="hint">(${a.type})</span></div>
               <div style="display:flex;align-items:center;gap:10px;">
                 <span class="num">${fmtMoney(accountBalance(a.id))}</span>
-                <button class="icon-btn" data-edit-acc="${a.id}">${ICONS.edit}</button>
-                <button class="icon-btn" data-del-acc="${a.id}">${ICONS.trash}</button>
+                <button class="icon-btn" data-edit-acc="${a.id}">${window.ICONS.edit}</button>
+                <button class="icon-btn" data-del-acc="${a.id}">${window.ICONS.trash}</button>
               </div>
             </div>`).join('')}
           </div>
@@ -1058,17 +1087,23 @@ function renderSettings(root){
 
       <div>
         <div class="card" style="margin-bottom:16px;">
+          <h3>Bulut Senkronizasyonu (Firebase)</h3>
+          <p class="hint" style="margin-top:0;">Verileriniz Firebase veritabanına bağlıdır. Ailenizle paylaştığınız link üzerinden herkes anlık olarak aynı verileri görür.</p>
+          <div style="padding:10px; background:var(--bg-elev); border-radius:8px; border:1px solid var(--border); font-size:13px; color:var(--income);">
+            ✓ Firebase Bulut Bağlantısı Aktif
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
           <h3>Yedekleme</h3>
-          <p class="hint" style="margin-top:0;">Tüm verileriniz yalnızca bu tarayıcıda saklanır. Cihaz değiştirirseniz veya tarayıcı verilerini temizlerseniz kayıtlarınız kaybolabilir — düzenli olarak yedek almanızı öneririz.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn" id="btn-export-json">${ICONS.download} Yedek İndir (.json)</button>
-            <label class="btn" for="import-file" style="cursor:pointer;">${ICONS.upload} Yedek Yükle</label>
+            <button class="btn" id="btn-export-json">${window.ICONS.download} Yedek İndir (.json)</button>
+            <label class="btn" for="import-file" style="cursor:pointer;">${window.ICONS.upload} Yedek Yükle</label>
             <input type="file" id="import-file" accept="application/json" style="display:none;">
           </div>
         </div>
         <div class="card">
           <h3>Tehlikeli Bölge</h3>
-          <p class="hint" style="margin-top:0;">Bu işlem tüm gelir, gider, cari ve kategori verilerinizi kalıcı olarak siler.</p>
+          <p class="hint" style="margin-top:0;">Bu işlem buluttaki ve yereldeki tüm verilerinizi kalıcı olarak sıfırlar.</p>
           <button class="btn btn-danger" id="btn-reset">Tüm Verileri Sıfırla</button>
         </div>
       </div>
@@ -1076,7 +1111,7 @@ function renderSettings(root){
   `;
 
   root.querySelector('#save-bizname').addEventListener('click',()=>{
-    state.settings.businessName = root.querySelector('#set-bizname').value.trim() || 'RiceMore';
+    window.state.settings.businessName = root.querySelector('#set-bizname').value.trim() || 'RiceMore';
     saveState(); applyBrand(); showToast('İşletme adı güncellendi');
   });
   root.querySelector('#theme-dark').addEventListener('click',()=>setTheme('dark'));
@@ -1085,13 +1120,13 @@ function renderSettings(root){
   root.querySelectorAll('[data-edit-acc]').forEach(b=>b.addEventListener('click',()=>openAccountModal(accById(b.dataset.editAcc))));
   root.querySelectorAll('[data-del-acc]').forEach(b=>b.addEventListener('click',()=>{
     const id = b.dataset.delAcc;
-    if(state.accounts.length<=1){ showToast('En az bir hesap bulunmalı'); return; }
-    const used = state.transactions.some(t=>t.accountId===id);
+    if(window.state.accounts.length<=1){ showToast('En az bir hesap bulunmalı'); return; }
+    const used = window.state.transactions.some(t=>t.accountId===id);
     if(used){ showToast('Bu hesaba bağlı işlemler var, önce onları taşıyın veya silin'); return; }
-    if(confirm('Bu hesabı silmek istiyor musunuz?')){ state.accounts = state.accounts.filter(a=>a.id!==id); saveState(); showToast('Hesap silindi'); render(); }
+    if(confirm('Bu hesabı silmek istiyor musunuz?')){ window.state.accounts = window.state.accounts.filter(a=>a.id!==id); saveState(); showToast('Hesap silindi'); render(); }
   }));
   root.querySelector('#btn-export-json').addEventListener('click',()=>{
-    download('RiceMore-Yedek-'+todayISO()+'.json', JSON.stringify(state,null,2), 'application/json');
+    download('RiceMore-Yedek-'+todayISO()+'.json', JSON.stringify(window.state,null,2), 'application/json');
     showToast('Yedek dosyası indirildi');
   });
   root.querySelector('#import-file').addEventListener('change', e=>{
@@ -1102,15 +1137,15 @@ function renderSettings(root){
         const parsed = JSON.parse(reader.result);
         if(!parsed.accounts || !parsed.transactions){ showToast('Geçersiz yedek dosyası'); return; }
         if(confirm('Mevcut tüm veriler bu yedekle değiştirilecek. Devam edilsin mi?')){
-          state = parsed; saveState(); applyBrand(); showToast('Yedek başarıyla yüklendi'); render();
+          window.state = parsed; saveState(); applyBrand(); showToast('Yedek başarıyla yüklendi'); render();
         }
       }catch(err){ showToast('Dosya okunamadı'); }
     };
     reader.readAsText(file);
   });
   root.querySelector('#btn-reset').addEventListener('click',()=>{
-    if(confirm('TÜM veriler kalıcı olarak silinecek. Bu işlem geri alınamaz. Emin misiniz?')){
-      state = defaultData(); saveState(); applyBrand(); showToast('Tüm veriler sıfırlandı'); render();
+    if(confirm('TÜM veriler kalıcı olarak silinecek. Emin misiniz?')){
+      window.state = defaultData(); saveState(); applyBrand(); showToast('Tüm veriler sıfırlandı'); render();
     }
   });
 }
@@ -1133,24 +1168,24 @@ function openAccountModal(existing){
     if(!name){ showToast('Lütfen hesap adı girin'); return; }
     const data = { name, type:document.getElementById('acc-type').value, opening: parseFloat(document.getElementById('acc-opening').value)||0 };
     if(existing) Object.assign(existing, data);
-    else state.accounts.push({ id:uid('acc'), ...data });
+    else window.state.accounts.push({ id:uid('acc'), ...data });
     saveState(); closeModal(); showToast('Hesap kaydedildi'); render();
   });
 }
-function setTheme(t){ state.settings.theme=t; document.body.setAttribute('data-theme', t); saveState(); render(); }
+window.setTheme = function(t){ window.state.settings.theme=t; document.body.setAttribute('data-theme', t); saveState(); render(); };
 
 /* ============================= BRAND / INIT ============================= */
-function applyBrand(){
-  document.getElementById('brand-name').textContent = state.settings.businessName || 'RiceMore';
-  document.title = (state.settings.businessName||'RiceMore') + ' | Gelir Gider Yönetimi';
-  document.body.setAttribute('data-theme', state.settings.theme||'dark');
-}
+window.applyBrand = function(){
+  document.getElementById('brand-name').textContent = window.state.settings.businessName || 'RiceMore';
+  document.title = (window.state.settings.businessName||'RiceMore') + ' | Gelir Gider Yönetimi';
+  document.body.setAttribute('data-theme', window.state.settings.theme||'dark');
+};
 
 document.getElementById('quick-add-btn').addEventListener('click',()=>openTransactionModal(null));
 
-applyBrand();
-navigate('dashboard');
-window.addEventListener('resize', ()=>{ if(currentView==='dashboard'||currentView==='reports') render(); });
+window.applyBrand();
+window.navigate('dashboard');
+window.addEventListener('resize', ()=>{ if(currentView==='dashboard'||currentView==='reports') window.render(); });
 </script>
 </body>
 </html>
